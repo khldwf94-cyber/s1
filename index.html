@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل دخول N7L Store</title>
+</head>
+<body>
+    <h2>تسجيل الدخول لتحميل المودات</h2>
+    <input type="text" id="userid" placeholder="أدخل الآيدي الخاص بك">
+    <input type="text" id="otpcode" placeholder="أدخل كود التحقق">
+    <button onclick="checkLogin()">دخول</button>
+
+    <div id="result"></div>
+
+    <script>
+        function checkLogin() {
+            let id = document.getElementById("userid").value;
+            let code = document.getElementById("otpcode").value;
+
+            // هذه مجرد تجربة (Logic بسيط)
+            if (id === "123" && code === "777") {
+                document.getElementById("result").innerHTML = "تم التحقق! <br> <a href='https://pastebin.com/raw/uGvV6a9T'>اضغط هنا لتحميل المودات</a>";
+            } else {
+                document.getElementById("result").innerHTML = "الآيدي أو الكود غير صحيح.";
+            }
+        }
+    </script>
+</body>
+</html>
