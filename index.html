@@ -3,238 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N7L Store | متجر إن سفن إل</title>
+    <title>N7L Store | التحقق من الهوية</title>
     <style>
         :root {
             --bg-color: #0b0c10;
             --secondary-bg: #1f2833;
             --text-color: #c5c6c7;
-            --primary-color: #66fcf1;
             --accent-color: #833ab4;
             --gradient-accent: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            line-height: 1.6;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
-
-        header {
-            background-color: rgba(31, 40, 51, 0.95);
-            padding: 20px;
-            text-align: center;
-            border-bottom: 2px solid var(--accent-color);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        header h1 {
-            color: #fff;
-            font-size: 2.5rem;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(131, 58, 180, 0.5);
-        }
-
-        header p {
-            color: #aaa;
-            font-size: 1rem;
-            margin-top: 5px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .welcome-section {
-            text-align: center;
-            margin-bottom: 60px;
-            padding: 40px;
-            background: linear-gradient(135deg, rgba(31, 40, 51, 0.6), rgba(11, 12, 16, 0.8));
-            border-radius: 15px;
-            border: 1px solid rgba(131, 58, 180, 0.3);
-        }
-
-        .welcome-section h2 {
-            color: #fff;
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 2rem;
-            color: #fff;
-            margin-bottom: 30px;
-            position: relative;
-        }
-
-        .section-title::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 3px;
-            background: var(--gradient-accent);
-            margin: 10px auto 0;
-            border-radius: 2px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin-bottom: 60px;
-        }
-
-        .card {
+        .login-box {
             background-color: var(--secondary-bg);
+            padding: 30px;
             border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-            display: flex;
-            flex-direction: column;
+            border: 1px solid rgba(131, 58, 180, 0.4);
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(131, 58, 180, 0.2);
-            border-color: rgba(131, 58, 180, 0.5);
-        }
-
-        .card-body {
-            padding: 25px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-title {
+        h2 { color: #fff; margin-bottom: 20px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #0b0c10;
             color: #fff;
-            font-size: 1.4rem;
-            margin-bottom: 10px;
+            text-align: center;
+            box-sizing: border-box;
         }
-
-        .card-text {
-            font-size: 0.95rem;
-            color: #a0a5ab;
-            margin-bottom: 20px;
-            flex-grow: 1;
-        }
-
-        .price {
-            font-size: 1.25rem;
-            color: #fff;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: block;
-        }
-
         .btn {
-            display: inline-block;
             background: var(--gradient-accent);
             color: #fff;
-            padding: 12px 20px;
-            text-align: center;
-            text-decoration: none;
+            border: none;
+            padding: 12px;
+            width: 100%;
             border-radius: 8px;
             font-weight: bold;
-            transition: opacity 0.2s;
             cursor: pointer;
-            border: none;
-            width: 100%;
+            margin-top: 10px;
         }
-
-        .btn:hover {
-            opacity: 0.9;
-        }
-
-        .btn-telegram {
-            background: #0088cc;
-            width: auto;
-            padding: 15px 35px;
-            font-size: 1.1rem;
-            margin-top: 20px;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px;
-            background-color: #050608;
-            color: #666;
-            font-size: 0.9rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        @media (max-width: 768px) {
-            header h1 { font-size: 2rem; }
-            .container { margin: 20px auto; }
-        }
+        .message { margin-top: 15px; font-size: 0.9rem; color: #ff4a4a; }
+        .success-msg { color: #2ecc71; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>N7L STORE</h1>
-        <p>المتجر الأول والمثالي لتسليم المودات والخدمات الرقمية</p>
-    </header>
-
-    <div class="container">
+    <div class="login-box" id="authBox">
+        <h2>بوابة التحقق N7L</h2>
+        <p style="font-size: 0.85rem; color: #aaa;">مسموح فقط للفئات (الثالثة، الخامسة، السادسة)</p>
         
-        <div class="welcome-section">
-            <h2>أهلاً بك في منصتنا الجديدة</h2>
-            <p>تصفح خدماتنا الحصرية وموداتنا الخاصة بالقروبات واللاعبين. تسليم فوري وآمن بالكامل.</p>
-            <!-- استبدل رابط التليجرام برابط البوت أو القناة الخاصة بمتجرك -->
-            <a href="https://t.me/YOUR_BOT_USERNAME" target="_blank" class="btn btn-telegram">الدخول إلى بوت المتجر على تليجرام</a>
+        <!-- مرحلة إدخال الآيدي -->
+        <div id="step1">
+            <input type="text" id="userId" placeholder="أدخل الآيدي (ID) الخاص بك">
+            <button class="btn" onclick="sendId()">إرسال كود التحقق</button>
         </div>
 
-        <h3 class="section-title">المودات والملفات المتاحة</h3>
-        <div class="grid">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">حزمة المودات الأساسية</h4>
-                    <p class="card-text">تحتوي على الإضافات والتعديلات الأساسية لرفع مستوى اللعب ومدمجة بأنظمة حماية ضد التسريب.</p>
-                    <span class="price">سعر مناسب جداً</span>
-                    <a href="https://t.me/YOUR_BOT_USERNAME" target="_blank" class="btn">طلب المود الآن</a>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">حزمة المودات الحصرية (VIP)</h4>
-                    <p class="card-text">نسخ حصرية ونادرة مخصصة، مع دعم فني متكامل وربط تلقائي بالكامل مع هويتك الرقمية.</p>
-                    <span class="price">عرض خاص لفترة محدودة</span>
-                    <a href="https://t.me/YOUR_BOT_USERNAME" target="_blank" class="btn">طلب الحزمة الحصرية</a>
-                </div>
-            </div>
+        <!-- مرحلة إدخال الـ OTP -->
+        <div id="step2" style="display: none;">
+            <input type="text" id="otpCode" placeholder="أدخل الكود المستلم (صالح لدقيقة)">
+            <button class="btn" onclick="sendOtp()">دخول الموقع</button>
         </div>
 
-        <h3 class="section-title">اشتراكات وخدمات أخرى</h3>
-        <div class="grid">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">الاشتراك السنوي للمطورين</h4>
-                    <p class="card-text">دخول كامل لجميع التحديثات القادمة والمستندات الحصرية طوال العام بدون قيود.</p>
-                    <a href="https://t.me/YOUR_BOT_USERNAME" target="_blank" class="btn">تفاصيل الاشتراك</a>
-                </div>
-            </div>
-        </div>
-
+        <div class="message" id="msg"></div>
     </div>
 
-    <footer>
-        <p>&copy; 2026 N7L Store. جميع الحقوق محفوظة.</p>
-    </footer>
+    <script>
+        let currentUserId = "";
 
+        function sendId() {
+            const id = document.getElementById('userId').value;
+            if(!id) return alert('الرجاء كتابة الآيدي');
+            currentUserId = id;
+
+            fetch('/api/verify-id', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: id })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const msgDiv = document.getElementById('msg');
+                if(data.status === 'success') {
+                    msgDiv.className = "message success-msg";
+                    msgDiv.innerText = data.message;
+                    document.getElementById('step1').style.display = 'none';
+                    document.getElementById('step2').style.display = 'block';
+                } else {
+                    msgDiv.className = "message";
+                    msgDiv.innerText = data.message;
+                }
+            });
+        }
+
+        function sendOtp() {
+            const code = document.getElementById('otpCode').value;
+            if(!code) return alert('الرجاء كتابة كود التحقق');
+
+            fetch('/api/verify-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: currentUserId, code: code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const msgDiv = document.getElementById('msg');
+                if(data.status === 'success') {
+                    // حفظ الجلسة وتوجيهه للرابط المتغير (صالح لمدة ساعة)
+                    localStorage.setItem('session_token', data.session_token);
+                    alert('تم التحقق بنجاح! مسموح لك بالدخول لمدة 60 دقيقة.');
+                    window.location.href = `/?room=${data.redirect_token}`;
+                } else {
+                    msgDiv.className = "message";
+                    msgDiv.innerText = data.message;
+                }
+            });
+        }
+    </script>
 </body>
 </html>
