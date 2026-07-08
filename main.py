@@ -1,114 +1,93 @@
-import os
+import time
 import random
 import uuid
-import time
-from datetime import datetime
-from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-import requests
+from flask import Flask, request, jsonify, render_template_string
 
-app = FastAPI()
+app = Flask(__name__)
 
-# إعداد مجلد الصفحات
-templates = Jinja2Templates(directory="templates")
+# قاعدة بيانات وهمية للمشتركين (الآيدي والفئة المسموحة: 3، 5، 6)
+# يمكنك تعديل الأرقام هنا أو ربطها ببوت الشراء لاحقاً
+ALLOWED_USERS = {
+    "123456789": {"group": 3},
+    "987654321": {"group": 5},
+    "555666777": {"group": 6}
+}
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-OWNER_CHAT_ID = "5432340735"
+# تخزين الأكواد المؤقتة (OTP) والجلسات (Sessions)
+pending_otps = {}  # { user_id: {"code": "1234", "expire": timestamp} }
+active_sessions = {} # { session_token: {"user_id": "...", "expire": timestamp} }
 
-allowed_buyers = {}  
-active_otps = {}      
-active_sessions = {}  
+# متغيرات حماية الرابط (يتغير كل 15 دقيقة)
+current_link_token = str(uuid.uuid4())[:8]
+last_token_update = time.time()
 
-current_site_secret = str(uuid.uuid4())[:8]
-last_link_rotation = time.time()
+def update_link_token():
+    global current_link_token, last_token_update
+    # إذا مرت 15 دقيقة (900 ثانية)، غيّر الرابط
+    if time.time() - last_token_update > 900:
+        current_link_token = str(uuid.uuid4())[:8]
+        last_token_update = time.time()
+    return current_link_token
 
-def send_owner_alert(message: str):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": OWNER_CHAT_ID, "text": f"🚨 [نظام N7L الآمن]:\n{message}"}
-    try: requests.post(url, json=payload)
-    except: pass
+@app.route('/get-current-token', methods=['GET'])
+def get_token():
+    token = update_link_token()
+    return jsonify({"token": token})
 
-def send_otp_via_bot(telegram_id: str, code: str):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    msg = f"🔐 كود الدخول المؤقت للموقع هو: {code}\n⏳ الكود صالح لمدة دقيقتين فقط!"
-    payload = {"chat_id": telegram_id, "text": msg}
-    try: requests.post(url, json=payload)
-    except: pass
-
-class BuyerActivation(BaseModel):
-    telegram_id: str
-    name: str
-    product_number: int
-
-class LoginRequest(BaseModel):
-    telegram_id: str
-
-class VerifyRequest(BaseModel):
-    telegram_id: str
-    code: str
-
-# عرض صفحة تسجيل الدخول أول ما يفتح الموقع
-@app.get("/", response_class=HTMLResponse)
-async def get_login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
-# عرض صفحة الأغراض والمودات المحمية (ممنوع دخولها إلا بتوكن الجلسة)
-@app.get("/store-content", response_class=HTMLResponse)
-async def get_content_page(request: Request, token: str = ""):
-    if token in active_sessions and active_sessions[token]["expires_at"] > time.time():
-        return templates.TemplateResponse("index.html", {"request": request})
-    return HTMLResponse(content="<h2>عذراً، الجلسة غير صالحة أو انتهت الـ 60 دقيقة. ارجع سجل دخول مجدداً.</h2>", status_code=403)
-
-@app.post("/api/activate-buyer")
-async def activate_buyer(data: BuyerActivation):
-    if data.product_number in [3, 5, 6]:
-        allowed_buyers[str(data.telegram_id)] = {
-            "name": data.name,
-            "product": data.product_number,
-            "activated_at": datetime.now().isoformat()
+# 1. خطوة فحص الآيدي وإرسال كود التحقق
+@app.route('/api/verify-id', methods=['POST'])
+def verify_id():
+    data = request.json
+    user_id = str(data.get('user_id'))
+    
+    # التأكد من وجود الآيدي ومن فئة المجموعات المسموحة (3، 5، 6)
+    if user_id in ALLOWED_USERS and ALLOWED_USERS[user_id]["group"] in [3, 5, 6]:
+        # توليد كود تحقق عشوائي من 4 أرقام
+        otp_code = str(random.randint(1000, 9999))
+        # ينتهي بعد دقيقة واحدة (60 ثانية)
+        pending_otps[user_id] = {
+            "code": otp_code,
+            "expire": time.time() + 60
         }
-        send_owner_alert(f"✅ تم تفعيل مشترك:\nالاسم: {data.name}\nالأيدي: {data.telegram_id}")
-        return {"status": "success"}
-    return {"status": "ignored"}
-
-@app.post("/api/request-login")
-async def request_login(data: LoginRequest):
-    tid = str(data.telegram_id)
-    if tid not in allowed_buyers:
-        raise HTTPException(status_code=403, detail="الأيدي غير مسجل بالمتجر.")
+        
+        # [هنا يتم إرسال الكود عبر بوت الحماية إلى التليجرام]
+        print(send_otp_via_protection_bot(user_id, otp_code))
+        
+        return jsonify({"status": "success", "message": "تم إرسال كود التحقق إلى بوت الحماية الخاص بك على تليجرام."})
     
-    otp_code = str(random.randint(100000, 999999))
-    active_otps[tid] = {"code": otp_code, "expires_at": time.time() + 120, "attempts": 0}
+    return jsonify({"status": "error", "message": "الآيدي غير مسجل أو ليس لديك صلاحية الدخول."})
+
+# 2. خطوة فحص كود التحقق ودخول الموقع
+@app.route('/api/verify-otp', methods=['POST'])
+def verify_otp():
+    data = request.json
+    user_id = str(data.get('user_id'))
+    user_code = str(data.get('code'))
     
-    send_otp_via_bot(tid, otp_code)
-    return {"status": "otp_sent"}
+    if user_id in pending_otps:
+        otp_data = pending_otps[user_id]
+        # التأكد أن الكود لم تنتهِ مدته (دقيقة) وأن الكود صحيح
+        if time.time() <= otp_data["expire"]:
+            if otp_data["code"] == user_code:
+                # توليد توكن جلسة للدخول لمدة ساعة (60 دقيقة)
+                session_token = str(uuid.uuid4())
+                active_sessions[session_token] = {
+                    "user_id": user_id,
+                    "expire": time.time() + 3600  # ساعة كاملة
+                }
+                # حذف كود الـ OTP بعد الاستخدام
+                del pending_otps[user_id]
+                return jsonify({"status": "success", "session_token": session_token, "redirect_token": current_link_token})
+            else:
+                return jsonify({"status": "error", "message": "كود التحقق غير صحيح."})
+        else:
+            return jsonify({"status": "error", "message": "انتهت صلاحية الكود (1 دقيقة)، اطلب كود جديد."})
+            
+    return jsonify({"status": "error", "message": "حدث خطأ، يرجى إعادة المحاولة."})
 
-@app.post("/api/verify-otp")
-async def verify_otp(data: VerifyRequest, request: Request):
-    tid = str(data.telegram_id)
-    user_ip = request.client.host
+def send_otp_via_protection_bot(user_id, code):
+    # محاكاة إرسال بوت الحماية للكود (هنا تربط توكن البوت حقك لاحقاً)
+    return f"[بوت الحماية] تم إرسال الكود {code} إلى المستخدم {user_id} بنجاح."
 
-    if tid not in active_otps: raise HTTPException(status_code=400, detail="اطلب كوداً أولاً.")
-    otp_data = active_otps[tid]
-    
-    if otp_data["attempts"] >= 3: raise HTTPException(status_code=429, detail="تم تقييدك لكثرة المحاولات الخاطئة.")
-    if time.time() > otp_data["expires_at"]: raise HTTPException(status_code=400, detail="انتهت صلاحية الكود (دقيقتين).")
-    if data.code != otp_data["code"]:
-        active_otps[tid]["attempts"] += 1
-        raise HTTPException(status_code=401, detail="الكود خاطئ!")
-
-    # منع التسريب المتزامن
-    for token, session in list(active_sessions.items()):
-        if session["telegram_id"] == tid and session["expires_at"] > time.time():
-            if session["ip"] != user_ip:
-                allowed_buyers.pop(tid, None)
-                active_sessions.pop(token, None)
-                raise HTTPException(status_code=403, detail="تم رصد دخول متزامن. قفل الحساب!")
-
-    session_token = str(uuid.uuid4())
-    active_sessions[session_token] = {"telegram_id": tid, "expires_at": time.time() + 3600, "ip": user_ip}
-    active_otps.pop(tid, None)
-    
-    return {"status": "authenticated", "session_token": session_token}
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)
