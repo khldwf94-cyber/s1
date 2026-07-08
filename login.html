@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل الدخول | متجر نحل</title>
+    <style>
+        body { background-color: #121212; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }
+        .box { background: #1e1e1e; padding: 30px; border-radius: 10px; display: inline-block; width: 320px; border: 1px solid #ffc107; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { background: #ffc107; color: black; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 95%; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>🐝 بوابة متجر نحل الآمنة</h2>
+    <div id="step1">
+        <p>أدخل الأيدي الخاص بك في تيليجرام:</p>
+        <input type="text" id="telegram_id" placeholder="مثال: 5432340735">
+        <button onclick="requestOTP()">إرسال كود التحقق</button>
+    </div>
+    <div id="step2" style="display:none;">
+        <p style="color: #ffc107;">تم إرسال كود التحقق لحسابك في الخاص!</p>
+        <input type="text" id="otp_code" placeholder="أدخل الكود المكون من 6 أرقام">
+        <button onclick="verifyOTP()">تأكيد الدخول</button>
+    </div>
+</div>
+
+<script>
+    async function requestOTP() {
+        const id = document.getElementById('telegram_id').value;
+        const res = await fetch('/api/request-login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegram_id: id}) });
+        if(res.ok) { document.getElementById('step1').style.display='none'; document.getElementById('step2').style.display='block'; }
+        else { alert("الأيدي غير مسجل أو غير مسموح لك بالدخول!"); }
+    }
+    async function verifyOTP() {
+        const id = document.getElementById('telegram_id').value;
+        const code = document.getElementById('otp_code').value;
+        const res = await fetch('/api/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({telegram_id: id, code: code}) });
+        const data = await res.json();
+        if(res.ok) { window.location.href = '/store-content?token=' + data.session_token; }
+        else { alert("الكود خاطئ أو منتهي الصلاحية!"); }
+    }
+</script>
+</body>
+</html>
