@@ -21,6 +21,11 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            /* كود حماية الحماية: منع التحديد */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         .login-box {
             background-color: var(--secondary-bg);
@@ -56,6 +61,9 @@
         }
         .message { margin-top: 15px; font-size: 0.9rem; color: #ff4a4a; }
         .success-msg { color: #2ecc71; }
+        
+        /* منع الطباعة */
+        @media print { body { display: none !important; } }
     </style>
 </head>
 <body>
@@ -64,13 +72,11 @@
         <h2>بوابة التحقق N7L</h2>
         <p style="font-size: 0.85rem; color: #aaa;">مسموح فقط للفئات (الثالثة، الخامسة، السادسة)</p>
         
-        <!-- مرحلة إدخال الآيدي -->
         <div id="step1">
             <input type="text" id="userId" placeholder="أدخل الآيدي (ID) الخاص بك">
             <button class="btn" onclick="sendId()">إرسال كود التحقق</button>
         </div>
 
-        <!-- مرحلة إدخال الـ OTP -->
         <div id="step2" style="display: none;">
             <input type="text" id="otpCode" placeholder="أدخل الكود المستلم (صالح لدقيقة)">
             <button class="btn" onclick="sendOtp()">دخول الموقع</button>
@@ -80,13 +86,54 @@
     </div>
 
     <script>
-        let currentUserId = "";
+        // 1. منع قائمة كليك يمين والنسخ على الروابط وكل شيء
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
 
+        // 2. منع الضغط المطول
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'A') {
+                e.target.style.webkitTouchCallout = 'none';
+            }
+        }, {passive: true});
+
+        // 3. منع اختصارات الكيبورد (نسخ، حفظ، أدوات مطور)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.keyCode === 67 || e.keyCode === 83 || e.keyCode === 85 || e.keyCode === 80) || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // 4. خدعة الشاشة السوداء عند التسجيل
+        window.addEventListener('blur', function() {
+            let blackOverlay = document.getElementById('black-screen-protect');
+            if (!blackOverlay) {
+                blackOverlay = document.createElement('div');
+                blackOverlay.id = 'black-screen-protect';
+                blackOverlay.style.position = 'fixed';
+                blackOverlay.style.top = '0';
+                blackOverlay.style.left = '0';
+                blackOverlay.style.width = '100vw';
+                blackOverlay.style.height = '100vh';
+                blackOverlay.style.backgroundColor = 'black';
+                blackOverlay.style.zIndex = '9999999';
+                document.body.appendChild(blackOverlay);
+            }
+        });
+        window.addEventListener('focus', function() {
+            let blackOverlay = document.getElementById('black-screen-protect');
+            if (blackOverlay) blackOverlay.remove();
+        });
+
+        // كود النظام الأصلي
+        let currentUserId = "";
         function sendId() {
             const id = document.getElementById('userId').value;
             if(!id) return alert('الرجاء كتابة الآيدي');
             currentUserId = id;
-
             fetch('/api/verify-id', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -110,7 +157,6 @@
         function sendOtp() {
             const code = document.getElementById('otpCode').value;
             if(!code) return alert('الرجاء كتابة كود التحقق');
-
             fetch('/api/verify-otp', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -120,7 +166,6 @@
             .then(data => {
                 const msgDiv = document.getElementById('msg');
                 if(data.status === 'success') {
-                    // حفظ الجلسة وتوجيهه للرابط المتغير (صالح لمدة ساعة)
                     localStorage.setItem('session_token', data.session_token);
                     alert('تم التحقق بنجاح! مسموح لك بالدخول لمدة 60 دقيقة.');
                     window.location.href = `/?room=${data.redirect_token}`;
