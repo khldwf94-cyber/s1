@@ -9,15 +9,15 @@ import telebot
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXIsb1-k")
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# آيدي الحساب المسؤول الخاص بك (تم تعديله إلى آيديك الحقيقي لتلقي التنبيهات)
-ADMIN_ID = 5091605335 
+# آيدي الحساب المسؤول الخاص بك (تم تثبيته على آيديك المطلوب لتلقي التنبيهات)
+ADMIN_ID = 5432340735 
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # تأمين الجلسات بمفتاح تشفير قوي يمنع التلاعب بالـ Cookies
 
-# قائمة المشتركين المعتمدين رسمياً (تم تحديث الآيدي لآيديك الفعلي لتجربة الدخول مباشرة)
+# قائمة المشتركين المعتمدين رسمياً (تم تسجيل آيديك المطلوب كمعتمد أساسي)
 APPROVED_USERS = {
-    5091605335: {
+    5432340735: {
         'expires_at': time.time() + 86400 * 30, 
         'current_ip': None
     }
@@ -106,7 +106,7 @@ HTML_PAGE = """
         {% if not step_two %}
             <form action="/login_step1" method="POST">
                 <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
-                <input type="text" name="user_id" placeholder="مثال: 5091605335" required autocomplete="off">
+                <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
                 <button type="submit">إرسال كود التحقق</button>
             </form>
         {% else %}
