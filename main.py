@@ -9,100 +9,52 @@ import telebot
 BOT_TOKEN = "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXILsb1-k"
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# 👑 آيدي حسابك الأساسي (الأدمن) - يدخل دائماً ومستثنى من أي قيود
+# 👑 آيدي حسابك الأساسي (الأدمن)
 ADMIN_ID = 5432340735 
 
-# 📢 آيدي قناتك الخاصة (التحقق التلقائي من المشتركين)
+# 📢 آيدي قناتك الخاصة بالعملاء
 BUYERS_CHAT_ID = -1002360216668  
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) 
 
-# لحفظ جلسات المشتركين النشطة مؤقتاً لتجنب تكرار تسجيل الدخول
+# لحفظ جلسات المشتركين النشطة
 ACTIVE_SESSIONS = {}
 VERIFICATION_CODES = {}
 
-# 2. واجهة الموقع الموحدة بالكامل (المودات التجريبية تظهر فوراً + المودات الخاصة تظهر بعد التحقق)
+# 2. الواجهة المباشرة والنظيفة (تظهر المودات فوراً بعد تأكيد الكود)
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>متجر N7L | محاكي الحوادث BeamNG</title>
+    <title>متجر N7L | تحميل المودات</title>
     <style>
         body {
             background-color: #0b0c10;
             color: #c5c6c7;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
-            padding: 40px 20px;
-            margin: 0;
+            padding: 50px 20px;
         }
         @media print { body { display: none; } }
         
-        .main-title {
-            color: #45f3ff;
-            font-size: 2.2rem;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px rgba(69, 243, 255, 0.3);
-        }
-        .main-subtitle {
-            color: #c5c6c7;
-            font-size: 1rem;
-            margin-bottom: 40px;
-        }
-
-        .section-box {
-            max-width: 500px;
-            margin: 0 auto 30px auto;
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
             background-color: #1f2833;
-            padding: 25px;
+            padding: 30px;
             border-radius: 10px;
-            border: 1px solid #1f2833;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            transition: 0.3s;
+            border: 1px solid #45f3ff;
+            box-shadow: 0 0 15px rgba(69, 243, 255, 0.2);
         }
-        .section-box:hover {
-            border-color: #45f3ff;
-            box-shadow: 0 0 15px rgba(69, 243, 255, 0.15);
-        }
+        h2 { color: #45f3ff; margin-bottom: 25px; }
         
-        h3 { 
-            color: #45f3ff; 
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            border-bottom: 1px solid #45f3ff33;
-            padding-bottom: 10px;
-        }
-        
-        /* تصميم أزرار روابط المودات والتحميل */
-        .link-card {
-            display: block;
-            background: #0b0c10;
-            color: #45f3ff;
-            padding: 14px;
-            margin: 12px 0;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-            text-align: center;
-            border: 1px solid #0b0c10;
-            transition: 0.3s;
-        }
-        .link-card:hover {
-            border-color: #45f3ff;
-            background: #1f2833;
-            color: #fff;
-            box-shadow: 0 0 8px rgba(69, 243, 255, 0.3);
-        }
-
-        /* تصميم فورم التحقق والدخول */
         input[type="text"] {
             width: 100%;
             padding: 12px;
-            margin: 12px 0;
+            margin: 10px 0;
             border: 1px solid #45f3ff;
             background: #0b0c10;
             color: #fff;
@@ -129,21 +81,39 @@ HTML_PAGE = """
             border: 1px solid #45f3ff; 
         }
         
-        .error { color: #ff3333; margin: 15px 0; font-weight: bold; font-size: 14px; }
-        .success { color: #00ff00; margin: 15px 0; font-weight: bold; font-size: 14px; }
-        p { font-size: 14px; line-height: 1.6; margin: 10px 0; }
+        .error { color: #ff3333; margin: 15px 0; font-weight: bold; }
+        .success { color: #00ff00; margin: 15px 0; font-weight: bold; }
+        p { font-size: 14px; line-height: 1.6; }
         
+        /* تصميم أزرار تحميل المودات */
+        .link-card {
+            display: block;
+            background: #0b0c10;
+            color: #45f3ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #1f2833;
+            transition: 0.3s;
+        }
+        .link-card:hover {
+            border-color: #45f3ff;
+            background: #1f2833;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(69, 243, 255, 0.3);
+        }
         .logout-btn {
             display: inline-block;
-            margin-top: 15px;
+            margin-top: 20px;
             color: #ff3333;
             text-decoration: none;
             font-size: 13px;
-            font-weight: bold;
         }
     </style>
     <script>
-        // حماية المحتوى من النسخ والـ Inspect Element
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.onkeydown = function(e) {
             if (e.keyCode == 123 || 
@@ -156,19 +126,8 @@ HTML_PAGE = """
     </script>
 </head>
 <body>
-
-    <h1 class="main-title">🏎️ متجر N7L</h1>
-    <p class="main-subtitle">بوابتك الخاصة لتحميل أقوى مودات محاكي الحوادث (BeamNG.drive)</p>
-
-    <div class="section-box">
-        <h3>🎁 مودات تجريبية مجانية</h3>
-        <p>هذه المودات مفتوحة للجميع للتجربة مجاناً:</p>
-        <a href="https://t.me/+YjIKDxJjhsw1MDY8" target="_blank" class="link-card">⬇️ تحميل مود الكامري التجريبي</a>
-        <a href="https://t.me/+YjIKDxJjhsw1MDY8" target="_blank" class="link-card">⬇️ تحميل مود الددسن التجريبي</a>
-    </div>
-
-    <div class="section-box" style="border-color: #45f3ff;">
-        <h3>🔒 قسم المودات والروابط الخاصة</h3>
+    <div class="container">
+        <h2>🔒 بوابة التحقق الثنائي</h2>
         
         {% if error %}
             <p class="error">{{ error }}</p>
@@ -177,7 +136,7 @@ HTML_PAGE = """
         {% if not logged_in %}
             {% if not step_two %}
                 <form action="/login_step1" method="POST">
-                    <p>خاص بالمتفاعلين والمشتركين بالقناة؛ أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP):</p>
+                    <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
                     <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
                     <button type="submit">إرسال كود التحقق</button>
                 </form>
@@ -189,16 +148,14 @@ HTML_PAGE = """
                 </form>
             {% endif %}
         {% else %}
-            <p class="success" style="font-size: 16px;">🎉 تم التحقق من اشتراكك بنجاح!</p>
-            <p>جلسة دخولك نشطة الآن على هذا الجهاز.</p>
+            <p class="success">🎉 تم التحقق بنجاح!</p>
             
-            <a href="https://t.me/+tPBT1R66qx43NGQ0" target="_blank" class="link-card" style="color: #00ff00; border-color: #00ff00;">👑 رابط المجموعة الأساسية للمشتركين</a>
-            <a href="https://t.me/+Ha82GPmaPJ05Yzg0" target="_blank" class="link-card" style="color: #00ff00; border-color: #00ff00;">📂 رابط أرشيف المودات الكاملة</a>
+            <a href="https://t.me/+YjIKDxJjhsw1MDY8" target="_blank" class="link-card">⬇️ تحميل مود الددسن</a>
+            <a href="https://t.me/+YjIKDxJjhsw1MDY8" target="_blank" class="link-card">⬇️ تحميل مود الأوبتيما</a>
             
             <a href="/logout" class="logout-btn">تسجيل الخروج الآمن 🔓</a>
         {% endif %}
     </div>
-
 </body>
 </html>
 """
@@ -223,7 +180,7 @@ def login_step1():
         
     user_id = int(user_id_str)
     
-    # التحقق التلقائي هل العميل مشترك في القناة؟
+    # التحقق هل العميل مشترك بالقناة؟
     is_buyer = False
     if user_id == ADMIN_ID:
         is_buyer = True
@@ -237,7 +194,7 @@ def login_step1():
             is_buyer = False
 
     if not is_buyer:
-        return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في القناة الخاصة بالعملاء المشتريين.", step_two=False, logged_in=False)
+        return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في النظام كـ (مشتري).", step_two=False, logged_in=False)
         
     otp = str(random.randint(100000, 999999))
     VERIFICATION_CODES[user_id] = {
@@ -248,7 +205,7 @@ def login_step1():
     try:
         protection_bot.send_message(
             user_id, 
-            f"🔒 كود التحقق لدخول بوابة المشتركين لمتجر N7L هو:\n\n"
+            f"🔒 كود التحقق لدخول موقع s1 هو:\n\n"
             f"`{otp}`\n\n"
             f"⏰ صالح للاستخدام لمدة 15 دقيقة فقط."
         )
@@ -257,7 +214,7 @@ def login_step1():
     except Exception:
         return render_template_string(
             HTML_PAGE, 
-            error="❌ فشل إرسال الكود. تأكد من بحثك عن البوت والضغط على /start أولاً لكي يستطيع مراسلتك.", 
+            error="❌ فشل إرسال الكود. تأكد من ضغط /start في البوت أولاً لكي يستطيع مراسلتك.", 
             step_two=False,
             logged_in=False
         )
