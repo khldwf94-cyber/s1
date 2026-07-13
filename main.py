@@ -15,7 +15,7 @@ ADMIN_ID = 5432340735
 app = Flask(__name__)
 app.secret_key = os.urandom(24) 
 
-# قائمة المشتركين المعتمدين رسمياً
+# قائمة المشتركين المعتمدين رسمياً (التحقق الفعلي من الشراء)
 APPROVED_USERS = {
     5432340735: {
         'expires_at': time.time() + 86400 * 30, 
@@ -26,7 +26,7 @@ APPROVED_USERS = {
 # لتخزين أكواد الـ OTP المؤقتة لكل آيدي
 VERIFICATION_CODES = {}
 
-# 2. تصميم صفحة التحقق s1 (مع حظر تصوير الشاشة، النسخ، الـ DevTools، والطباعة)
+# 2. واجهة الدخول الموحدة (تحتوي على التحقق وإظهار المودات مباشرة في نفس الصفحة)
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -79,9 +79,39 @@ HTML_PAGE = """
         }
         button:hover { background-color: #1f2833; color: #45f3ff; border: 1px solid #45f3ff; }
         .error { color: #ff3333; margin: 15px 0; font-weight: bold; }
-        .warning { color: #ffcc00; margin: 15px 0; font-weight: bold; }
         .success { color: #00ff00; }
         p { font-size: 14px; line-height: 1.6; }
+        
+        /* تصميم أزرار الروابط المباشرة */
+        .links-section {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .link-card {
+            display: block;
+            background: #0b0c10;
+            color: #45f3ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #1f2833;
+            transition: 0.3s;
+        }
+        .link-card:hover {
+            border-color: #45f3ff;
+            background: #1f2833;
+            color: #fff;
+        }
+        .logout-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: #ff3333;
+            text-decoration: none;
+            font-size: 14px;
+        }
     </style>
     <script>
         document.addEventListener('contextmenu', event => event.preventDefault());
@@ -102,104 +132,34 @@ HTML_PAGE = """
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}
-        
-        {% if warning %}
-            <p class="warning">{{ warning }}</p>
-        {% endif %}
 
-        {% if not step_two %}
-            <form action="/login_step1" method="POST">
-                <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
-                <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
-                <button type="submit">إرسال كود التحقق</button>
-            </form>
+        {% if not logged_in %}
+            <!-- إذا كان المستخدم لم يسجل دخوله بعد -->
+            {% if not step_two %}
+                <!-- الخطوة الأولى: إدخال الآيدي للتحقق من الشراء -->
+                <form action="/login_step1" method="POST">
+                    <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
+                    <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
+                    <button type="submit">إرسال كود التحقق</button>
+                </form>
+            {% else %}
+                <!-- الخطوة الثانية: إدخال الرمز المبعوث على التليجرام -->
+                <form action="/login_step2" method="POST">
+                    <p class="success">📩 أرسلنا كود التحقق إلى حسابك في تليجرام.</p>
+                    <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
+                    <button type="submit">تأكيد ودخول</button>
+                </form>
+            {% endif %}
         {% else %}
-            <form action="/login_step2" method="POST">
-                <p class="success">📩 أدخل كود التحقق لتأكيد الدخول.</p>
-                <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
-                <button type="submit">تأكيد ودخول</button>
-            </form>
+            <!-- البوت تحقق منه ونجح الدخول: تظهر المودات مباشرة هنا وبنفس الصفحة! -->
+            <p class="success" style="font-size: 18px; font-weight: bold;">🎉 تم التحقق بنجاح!</p>
+            <p>جلسة دخولك نشطة الآن على هذا الجهاز.</p>
+            <div class="links-section">
+                <a href="https://t.me/+tPBT1R66qx43NGQ0" target="_blank" class="link-card">🔗 رابط المجموعة الأساسية</a>
+                <a href="https://t.me/+Ha82GPmaPJ05Yzg0" target="_blank" class="link-card">🔗 رابط مودات محاكي الحوادث</a>
+            </div>
+            <a href="/logout" class="logout-btn">تسجيل الخروج الآمن 🔓</a>
         {% endif %}
-    </div>
-</body>
-</html>
-"""
-
-# 3. صفحة عرض المودات والروابط المحمية بعد التحقق بنجاح
-CONTENT_PAGE = """
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منطقة الأعضاء | متجر N7L</title>
-    <style>
-        body {
-            background-color: #0b0c10;
-            color: #c5c6c7;
-            font-family: 'Segoe UI', sans-serif;
-            text-align: center;
-            padding: 50px 20px;
-        }
-        @media print { body { display: none; } }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background-color: #1f2833;
-            padding: 40px;
-            border-radius: 10px;
-            border: 1px solid #45f3ff;
-            box-shadow: 0 0 15px rgba(69, 243, 255, 0.3);
-        }
-        h1 { color: #45f3ff; margin-bottom: 20px; }
-        p { font-size: 16px; margin-bottom: 30px; }
-        .link-card {
-            display: block;
-            background: #0b0c10;
-            color: #45f3ff;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            border: 1px solid #1f2833;
-            transition: 0.3s;
-        }
-        .link-card:hover {
-            border-color: #45f3ff;
-            background: #1f2833;
-            color: #fff;
-        }
-        .logout-btn {
-            display: inline-block;
-            margin-top: 30px;
-            color: #ff3333;
-            text-decoration: none;
-            font-size: 14px;
-        }
-    </style>
-    <script>
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        document.onkeydown = function(e) {
-            if (e.keyCode == 123 || 
-                (e.ctrlKey && e.shiftKey && e.keyCode == 73) || 
-                (e.ctrlKey && e.shiftKey && e.keyCode == 74) || 
-                (e.ctrlKey && e.keyCode == 85)) {
-                return false;
-            }
-        };
-    </script>
-</head>
-<body>
-    <div class="container">
-        <h1>🎉 أهلاً بك في المنطقة الخاصة</h1>
-        <p>جلسة دخولك نشطة الآن لمدة 90 دقيقة فقط على هذا الجهاز.</p>
-        <hr style="border: 1px solid #333; margin: 20px 0;">
-        
-        <a href="https://t.me/+tPBT1R66qx43NGQ0" target="_blank" class="link-card">🔗 رابط المجموعة الأساسية</a>
-        <a href="https://t.me/+Ha82GPmaPJ05Yzg0" target="_blank" class="link-card">🔗 رابط مودات محاكي الحوادث</a>
-        
-        <a href="/logout" class="logout-btn">تسجيل الخروج الآمن 🔓</a>
     </div>
 </body>
 </html>
@@ -229,36 +189,35 @@ def index():
     user_id = session.get('user_id')
     if user_id in APPROVED_USERS:
         if time.time() < APPROVED_USERS[user_id]['expires_at']:
-            return render_template_string(CONTENT_PAGE)
+            # إذا مسجل دخوله ومؤكد، تفتح الواجهة مضافاً إليها روابط المودات مباشرة
+            return render_template_string(HTML_PAGE, error=None, step_two=False, logged_in=True)
             
     session.clear()
-    return render_template_string(HTML_PAGE, error=None, step_two=False)
+    return render_template_string(HTML_PAGE, error=None, step_two=False, logged_in=False)
 
 @app.route('/login_step1', methods=['POST'])
 def login_step1():
     user_id_str = request.form.get('user_id')
     
     if not user_id_str or not user_id_str.isdigit():
-        return render_template_string(HTML_PAGE, error="❌ الآيدي يجب أن يتكون من أرقام فقط.", step_two=False)
+        return render_template_string(HTML_PAGE, error="❌ الآيدي يجب أن يتكون من أرقام فقط.", step_two=False, logged_in=False)
         
     user_id = int(user_id_str)
     
+    # تحقق صارم: هل المشترك مسجل ومشتري فعلاً؟
     if user_id not in APPROVED_USERS:
-        return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في النظام. تواصل مع الإدارة لتفعيل حسابك.", step_two=False)
+        return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في النظام (غير مشتري). تواصل مع الإدارة لتفعيل حسابك.", step_two=False, logged_in=False)
         
     # توليد الكود العشوائي
     otp = str(random.randint(100000, 999999))
     
-    # 🛡️ ميزة الرمز الاحتياطي للأدمن
-    if user_id == ADMIN_ID:
-        otp = "123456" # كود ثابت احتياطي للأدمن دائماً
-        
     VERIFICATION_CODES[user_id] = {
         'code': otp,
         'generated_at': time.time()
     }
     
     try:
+        # إرسال الكود للبوت
         protection_bot.send_message(
             user_id, 
             f"🔒 كود التحقق لدخول موقع s1 هو:\n\n"
@@ -266,21 +225,13 @@ def login_step1():
             f"⏰ صالح للاستخدام لمدة 15 دقيقة فقط."
         )
         session['attempting_user_id'] = user_id
-        return render_template_string(HTML_PAGE, error=None, step_two=True)
-    except Exception as e:
-        # إذا تعطل التليجرام وكان المستخدم هو الأدمن، نتخطى الخطأ ونعطيه الكود الاحتياطي مباشرة!
-        if user_id == ADMIN_ID:
-            session['attempting_user_id'] = user_id
-            return render_template_string(
-                HTML_PAGE, 
-                error=None,
-                warning="⚠️ تعذر إرسال رسالة للتليجرام. استخدم الرمز الاحتياطي للأدمن: 123456", 
-                step_two=True
-            )
+        return render_template_string(HTML_PAGE, error=None, step_two=True, logged_in=False)
+    except Exception:
         return render_template_string(
             HTML_PAGE, 
-            error=f"❌ فشل إرسال الكود. تأكد من ضغط /start في البوت أولاً. (السبب: {str(e)})", 
-            step_two=False
+            error="❌ فشل إرسال الكود. تأكد من ضغط /start في البوت أولاً ليتسنى له مراسلتك.", 
+            step_two=False,
+            logged_in=False
         )
 
 @app.route('/login_step2', methods=['POST'])
@@ -289,13 +240,13 @@ def login_step2():
     user_id = session.get('attempting_user_id')
     
     if not user_id or user_id not in VERIFICATION_CODES:
-        return render_template_string(HTML_PAGE, error="❌ حدث خطأ في الجلسة. أعد إدخال الآيدي.", step_two=False)
+        return render_template_string(HTML_PAGE, error="❌ حدث خطأ في الجلسة. أعد إدخال الآيدي.", step_two=False, logged_in=False)
         
     code_data = VERIFICATION_CODES[user_id]
     
     if time.time() - code_data['generated_at'] > 900:
         VERIFICATION_CODES.pop(user_id, None)
-        return render_template_string(HTML_PAGE, error="❌ انتهت صلاحية كود التحقق. أعد المحاولة.", step_two=False)
+        return render_template_string(HTML_PAGE, error="❌ انتهت صلاحية كود التحقق. أعد المحاولة.", step_two=False, logged_in=False)
         
     if otp_input == code_data['code']:
         client_ip = request.remote_addr
@@ -303,9 +254,10 @@ def login_step2():
         APPROVED_USERS[user_id]['current_ip'] = client_ip
         session['user_id'] = user_id
         VERIFICATION_CODES.pop(user_id, None)
-        return render_template_string(CONTENT_PAGE)
+        # عند إدخال الكود الصحيح، يتم تجديد الصفحة وتظهر المودات فوراً بنفس الصفحة!
+        return render_template_string(HTML_PAGE, error=None, step_two=False, logged_in=True)
     else:
-        return render_template_string(HTML_PAGE, error="❌ كود التحقق غير صحيح. أعد المحاولة.", step_two=True)
+        return render_template_string(HTML_PAGE, error="❌ كود التحقق غير صحيح. أعد المحاولة.", step_two=True, logged_in=False)
 
 @app.route('/logout')
 def logout():
