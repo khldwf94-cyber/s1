@@ -12,7 +12,7 @@ protection_bot = telebot.TeleBot(BOT_TOKEN)
 # 👑 آيدي حسابك الأساسي (الأدمن)
 ADMIN_ID = 5432340735 
 
-# 📢 آيدي قناتك الخاصة بالعملاء
+# 📢 آيدي قناتك الخاصة بالعملاء المشتريين
 BUYERS_CHAT_ID = -1002360216668  
 
 app = Flask(__name__)
@@ -22,7 +22,7 @@ app.secret_key = os.urandom(24)
 ACTIVE_SESSIONS = {}
 VERIFICATION_CODES = {}
 
-# 2. الواجهة المباشرة والنظيفة (تظهر المودات فوراً بعد تأكيد الكود)
+# 2. الواجهة المباشرة وبها أزرار المودات مرتبة بنفس الصورة والترتيب المطلوب
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -41,7 +41,7 @@ HTML_PAGE = """
         @media print { body { display: none; } }
         
         .container {
-            max-width: 400px;
+            max-width: 420px;
             margin: 0 auto;
             background-color: #1f2833;
             padding: 30px;
@@ -85,13 +85,13 @@ HTML_PAGE = """
         .success { color: #00ff00; margin: 15px 0; font-weight: bold; }
         p { font-size: 14px; line-height: 1.6; }
         
-        /* تصميم أزرار تحميل المودات */
+        /* تصميم أزرار المودات */
         .link-card {
             display: block;
             background: #0b0c10;
             color: #45f3ff;
             padding: 15px;
-            margin: 15px 0;
+            margin: 12px 0;
             border-radius: 5px;
             text-decoration: none;
             font-weight: bold;
@@ -127,7 +127,7 @@ HTML_PAGE = """
 </head>
 <body>
     <div class="container">
-        <h2>🔒 بوابة التحقق الثنائي</h2>
+        <h2>🔒 بوابة المودات الخاصة</h2>
         
         {% if error %}
             <p class="error">{{ error }}</p>
@@ -135,12 +135,14 @@ HTML_PAGE = """
 
         {% if not logged_in %}
             {% if not step_two %}
+                <!-- خطوة 1: إدخال الآيدي للتحقق -->
                 <form action="/login_step1" method="POST">
                     <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
                     <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
                     <button type="submit">إرسال كود التحقق</button>
                 </form>
             {% else %}
+                <!-- خطوة 2: تأكيد الرمز -->
                 <form action="/login_step2" method="POST">
                     <p class="success">📩 أرسلنا كود التحقق إلى حسابك في تليجرام.</p>
                     <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
@@ -148,10 +150,24 @@ HTML_PAGE = """
                 </form>
             {% endif %}
         {% else %}
-            <p class="success">🎉 تم التحقق بنجاح!</p>
+            <!-- عرض المودات بالترتيب والروابط المباشرة فور نجاح التحقق -->
+            <p class="success">🎉 تم التحقق بنجاح! حمل المودات من الروابط أدناه:</p>
             
-            <a href="https://t.me/+YjIKDxJjhsw1MDY8" target="_blank" class="link-card">⬇️ تحميل مود الددسن</a>
-            <a href="https://t.me/+YjIKDxJjhsw1MDY8" target="_blank" class="link-card">⬇️ تحميل مود الأوبتيما</a>
+            <a href="https://www.dropbox.com/scl/fi/j4v4ssvcfh18bfiftszof/Optima_2019_KHwylD.zip?rlkey=4xkvmcpac711khtenp60v4ysk&st=0nskr6jk&dl=1" target="_blank" class="link-card">🚘 اوبتما ٢٠١٩ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/esm2hbzq6ip66obfevcog/Camry_2021_KHwylD.zip?rlkey=upbfz1cy0knmm7maax39joq8w&st=pd4w2rpa&dl=1" target="_blank" class="link-card">🚘 كامري ٢٠٢١ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/m8mfrvjbdm87cisnp7vxi/Camry_2005_KHwylD.zip?rlkey=6k2xk7adc5oxd1381ysxe1rdy&st=xyxcius1&dl=1" target="_blank" class="link-card">🚘 كامري ٢٠٠٥ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/j6lnurcqyv0fj8vc81cnw/Cruze_2017_KHwylD.zip?rlkey=9uvvcst8pxqpzowmx9p93t76m&st=ah4d77gs&dl=1" target="_blank" class="link-card">🚗 كروز ٢٠١٧ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/km3j5tw8bnt99ebngvqum/Ddsn_2016_KHwylD.zip?rlkey=r4kg0mln6s8cwhj5vhun4mayx&st=nlloh4cl&dl=1" target="_blank" class="link-card">🛻 ددسن ٢٠١٦ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/12jvs85pq3mx58mxhdwqr/Hilux_2011_KHwylD-2.zip?rlkey=n1oyx9498iry5sffe40lauj1l&st=qi1alrmb&dl=1" target="_blank" class="link-card">🛻 هايلكس ٢٠١١ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/v0adyryue04uzo06b980n/Caprice_2013_KHwylD.zip?rlkey=u5ugflyib2dl2f3pzswr1vp6g&st=g3rj4dvc&dl=1" target="_blank" class="link-card">🚘 كابرس ٢٠١٣ ( خويلد )</a>
+            
+            <a href="https://www.dropbox.com/scl/fi/k5ufh18eaezsoxiqbqyx0/Hyundai_Sonata_2024_KHwylD.zip?rlkey=7toa2wa4kyjo86qonukbuffdt&st=2ha3kmbi&dl=1" target="_blank" class="link-card">🏎️ موستنق ٢٠١٣ ( خويلد )</a>
             
             <a href="/logout" class="logout-btn">تسجيل الخروج الآمن 🔓</a>
         {% endif %}
@@ -180,7 +196,6 @@ def login_step1():
         
     user_id = int(user_id_str)
     
-    # التحقق هل العميل مشترك بالقناة؟
     is_buyer = False
     if user_id == ADMIN_ID:
         is_buyer = True
