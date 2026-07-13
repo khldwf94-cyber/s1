@@ -9,11 +9,11 @@ import telebot
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXIsb1-k")
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# آيدي الحساب المسؤول الخاص بك
+# آيدي الحساب المسؤول الخاص بك (حسابك الأساسي)
 ADMIN_ID = 5432340735 
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24) # تأمين الجلسات بمفتاح تشفير قوي يمنع التلاعب بالـ Cookies
+app.secret_key = os.urandom(24) 
 
 # قائمة المشتركين المعتمدين رسمياً
 APPROVED_USERS = {
@@ -42,7 +42,7 @@ HTML_PAGE = """
             text-align: center;
             padding: 50px 20px;
         }
-        @media print { body { display: none; } } /* إخفاء الصفحة عند محاولة الحفظ كـ PDF أو الطباعة */
+        @media print { body { display: none; } }
         .container {
             max-width: 400px;
             margin: 0 auto;
@@ -79,11 +79,11 @@ HTML_PAGE = """
         }
         button:hover { background-color: #1f2833; color: #45f3ff; border: 1px solid #45f3ff; }
         .error { color: #ff3333; margin: 15px 0; font-weight: bold; }
+        .warning { color: #ffcc00; margin: 15px 0; font-weight: bold; }
         .success { color: #00ff00; }
         p { font-size: 14px; line-height: 1.6; }
     </style>
     <script>
-        // تعطيل الزر الأيمن للماوس وعناصر فحص الصفحة DevTools حماية للأكواد
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.onkeydown = function(e) {
             if (e.keyCode == 123 || 
@@ -102,6 +102,10 @@ HTML_PAGE = """
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}
+        
+        {% if warning %}
+            <p class="warning">{{ warning }}</p>
+        {% endif %}
 
         {% if not step_two %}
             <form action="/login_step1" method="POST">
@@ -111,7 +115,7 @@ HTML_PAGE = """
             </form>
         {% else %}
             <form action="/login_step2" method="POST">
-                <p class="success">📩 أرسلنا كود التحقق إلى حسابك في تليجرام.</p>
+                <p class="success">📩 أدخل كود التحقق لتأكيد الدخول.</p>
                 <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
                 <button type="submit">تأكيد ودخول</button>
             </form>
@@ -205,8 +209,6 @@ CONTENT_PAGE = """
 @protection_bot.message_handler(commands=['start'])
 def welcome_protection(message):
     user_id = message.from_user.id
-    
-    # تفعيل بوت الحماية (البوت فقط يرحب بالعميل المعتمد، ولا يضيفه تلقائياً لقائمة المشتركين)
     if user_id in APPROVED_USERS:
         protection_bot.reply_to(message, 
             f"🔒 أهلاً بك في بوت حماية متجر N7L.\n\n"
@@ -221,16 +223,14 @@ def welcome_protection(message):
             f"لشراء اشتراك، يرجى التواصل مع الإدارة."
         )
 
-# ==================== مسارات Flask (الموقع الإلكتروني) ====================
+# ==================== مسارات Flask ====================
 @app.route('/')
 def index():
     user_id = session.get('user_id')
     if user_id in APPROVED_USERS:
-        # التحقق من صلاحية وقت الجلسة
         if time.time() < APPROVED_USERS[user_id]['expires_at']:
             return render_template_string(CONTENT_PAGE)
             
-    # تنظيف الجلسات القديمة أو منتهية الصلاحية
     session.clear()
     return render_template_string(HTML_PAGE, error=None, step_two=False)
 
@@ -243,19 +243,22 @@ def login_step1():
         
     user_id = int(user_id_str)
     
-    # تحقق صارم: هل الآيدي موجود في APPROVED_USERS؟
     if user_id not in APPROVED_USERS:
         return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في النظام. تواصل مع الإدارة لتفعيل حسابك.", step_two=False)
         
-    # توليد كود OTP من 6 أرقام بشكل عشوائي تماماً
+    # توليد الكود العشوائي
     otp = str(random.randint(100000, 999999))
+    
+    # 🛡️ ميزة الرمز الاحتياطي للأدمن
+    if user_id == ADMIN_ID:
+        otp = "123456" # كود ثابت احتياطي للأدمن دائماً
+        
     VERIFICATION_CODES[user_id] = {
         'code': otp,
         'generated_at': time.time()
     }
     
     try:
-        # إرسال الكود للعميل عبر بوت الحماية المعتمد
         protection_bot.send_message(
             user_id, 
             f"🔒 كود التحقق لدخول موقع s1 هو:\n\n"
@@ -264,10 +267,19 @@ def login_step1():
         )
         session['attempting_user_id'] = user_id
         return render_template_string(HTML_PAGE, error=None, step_two=True)
-    except Exception:
+    except Exception as e:
+        # إذا تعطل التليجرام وكان المستخدم هو الأدمن، نتخطى الخطأ ونعطيه الكود الاحتياطي مباشرة!
+        if user_id == ADMIN_ID:
+            session['attempting_user_id'] = user_id
+            return render_template_string(
+                HTML_PAGE, 
+                error=None,
+                warning="⚠️ تعذر إرسال رسالة للتليجرام. استخدم الرمز الاحتياطي للأدمن: 123456", 
+                step_two=True
+            )
         return render_template_string(
             HTML_PAGE, 
-            error="❌ فشل إرسال الكود. تأكد من أنك قمت بالدخول على بوت الحماية والضغط على /start أولاً لكي يستطيع مراسلتك.", 
+            error=f"❌ فشل إرسال الكود. تأكد من ضغط /start في البوت أولاً. (السبب: {str(e)})", 
             step_two=False
         )
 
@@ -281,20 +293,15 @@ def login_step2():
         
     code_data = VERIFICATION_CODES[user_id]
     
-    # التحقق من صلاحية وقت الكود (15 دقيقة = 900 ثانية)
     if time.time() - code_data['generated_at'] > 900:
         VERIFICATION_CODES.pop(user_id, None)
         return render_template_string(HTML_PAGE, error="❌ انتهت صلاحية كود التحقق. أعد المحاولة.", step_two=False)
         
     if otp_input == code_data['code']:
         client_ip = request.remote_addr
-        
-        # حماية مبسطة للمزامنة بين الأجهزة
         APPROVED_USERS[user_id]['expires_at'] = time.time() + 5400
         APPROVED_USERS[user_id]['current_ip'] = client_ip
         session['user_id'] = user_id
-        
-        # مسح كود التحقق لعدم إعادة استخدامه
         VERIFICATION_CODES.pop(user_id, None)
         return render_template_string(CONTENT_PAGE)
     else:
@@ -304,11 +311,10 @@ def login_step2():
 def logout():
     user_id = session.get('user_id')
     if user_id in APPROVED_USERS:
-        APPROVED_USERS[user_id]['current_ip'] = None # مسح الآي بي عند تسجيل الخروج يدوياً ليتسنى له الدخول بجهاز أخر لاحقاً
+        APPROVED_USERS[user_id]['current_ip'] = None
     session.clear()
     return redirect(url_for('index'))
 
-# ==================== تشغيل السيرفر والبوت بطريقة متوافقة مع Render ====================
 def run_bot():
     print("⚡ Starting Telegram Bot...")
     try:
@@ -317,12 +323,10 @@ def run_bot():
         print(f"❌ Bot error: {e}")
 
 if __name__ == "__main__":
-    # 1. تشغيل بوت التليجرام في الخلفية (Daemon Thread) لتجنب تعليق Render
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.daemon = True
     bot_thread.start()
     
-    # 2. تشغيل سيرفر الـ Flask كعملية رئيسية ليستمع للـ Port المطلوب من Render بنجاح
     print("⚡ Starting Flask Web Server...")
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
