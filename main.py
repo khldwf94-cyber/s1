@@ -22,7 +22,7 @@ app.secret_key = os.urandom(24)
 ACTIVE_SESSIONS = {}
 VERIFICATION_CODES = {}
 
-# 2. الواجهة المباشرة وبها أزرار المودات مرتبة بنفس الصورة والترتيب المطلوب
+# 2. الواجهة وتصميم أزرار التحميل
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -36,25 +36,73 @@ HTML_PAGE = """
             color: #c5c6c7;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
-            padding: 50px 20px;
+            padding: 40px 20px;
+            margin: 0;
         }
         @media print { body { display: none; } }
         
-        .container {
-            max-width: 420px;
-            margin: 0 auto;
-            background-color: #1f2833;
-            padding: 30px;
-            border-radius: 10px;
-            border: 1px solid #45f3ff;
-            box-shadow: 0 0 15px rgba(69, 243, 255, 0.2);
+        .main-title {
+            color: #45f3ff;
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px rgba(69, 243, 255, 0.3);
         }
-        h2 { color: #45f3ff; margin-bottom: 25px; }
+        .main-subtitle {
+            color: #c5c6c7;
+            font-size: 1rem;
+            margin-bottom: 40px;
+        }
+
+        .section-box {
+            max-width: 500px;
+            margin: 0 auto 30px auto;
+            background-color: #1f2833;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #1f2833;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: 0.3s;
+        }
+        .section-box:hover {
+            border-color: #45f3ff;
+            box-shadow: 0 0 15px rgba(69, 243, 255, 0.15);
+        }
         
+        h3 { 
+            color: #45f3ff; 
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 1px solid #45f3ff33;
+            padding-bottom: 10px;
+        }
+        
+        /* تصميم أزرار التحميل الممتازة */
+        .link-card {
+            display: block;
+            background: #0b0c10;
+            color: #45f3ff;
+            padding: 14px;
+            margin: 12px 0;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #0b0c10;
+            transition: 0.3s;
+        }
+        .link-card:hover {
+            border-color: #45f3ff;
+            background: #1f2833;
+            color: #fff;
+            box-shadow: 0 0 8px rgba(69, 243, 255, 0.3);
+        }
+
+        /* تصميم فورم التحقق والدخول */
         input[type="text"] {
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
+            margin: 12px 0;
             border: 1px solid #45f3ff;
             background: #0b0c10;
             color: #fff;
@@ -81,39 +129,21 @@ HTML_PAGE = """
             border: 1px solid #45f3ff; 
         }
         
-        .error { color: #ff3333; margin: 15px 0; font-weight: bold; }
-        .success { color: #00ff00; margin: 15px 0; font-weight: bold; }
-        p { font-size: 14px; line-height: 1.6; }
+        .error { color: #ff3333; margin: 15px 0; font-weight: bold; font-size: 14px; }
+        .success { color: #00ff00; margin: 15px 0; font-weight: bold; font-size: 14px; }
+        p { font-size: 14px; line-height: 1.6; margin: 10px 0; }
         
-        /* تصميم أزرار المودات */
-        .link-card {
-            display: block;
-            background: #0b0c10;
-            color: #45f3ff;
-            padding: 15px;
-            margin: 12px 0;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            text-align: center;
-            border: 1px solid #1f2833;
-            transition: 0.3s;
-        }
-        .link-card:hover {
-            border-color: #45f3ff;
-            background: #1f2833;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(69, 243, 255, 0.3);
-        }
         .logout-btn {
             display: inline-block;
-            margin-top: 20px;
+            margin-top: 15px;
             color: #ff3333;
             text-decoration: none;
             font-size: 13px;
+            font-weight: bold;
         }
     </style>
     <script>
+        // حماية المحتوى
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.onkeydown = function(e) {
             if (e.keyCode == 123 || 
@@ -126,23 +156,27 @@ HTML_PAGE = """
     </script>
 </head>
 <body>
-    <div class="container">
-        <h2>🔒 بوابة المودات الخاصة</h2>
+
+    <h1 class="main-title">🏎️ متجر N7L</h1>
+    <p class="main-subtitle">بوابتك الخاصة لتحميل أقوى مودات محاكي الحوادث (BeamNG.drive)</p>
+
+    <!-- صندوق الدخول والتحميل الموحد -->
+    <div class="section-box" style="border-color: #45f3ff;">
+        <h3>🔒 قسم المودات والروابط الخاصة</h3>
         
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}
 
         {% if not logged_in %}
+            <!-- واجهة التحقق بالتليجرام -->
             {% if not step_two %}
-                <!-- خطوة 1: إدخال الآيدي للتحقق -->
                 <form action="/login_step1" method="POST">
-                    <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
+                    <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP):</p>
                     <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
                     <button type="submit">إرسال كود التحقق</button>
                 </form>
             {% else %}
-                <!-- خطوة 2: تأكيد الرمز -->
                 <form action="/login_step2" method="POST">
                     <p class="success">📩 أرسلنا كود التحقق إلى حسابك في تليجرام.</p>
                     <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
@@ -150,28 +184,29 @@ HTML_PAGE = """
                 </form>
             {% endif %}
         {% else %}
-            <!-- عرض المودات بالترتيب والروابط المباشرة فور نجاح التحقق -->
-            <p class="success">🎉 تم التحقق بنجاح! حمل المودات من الروابط أدناه:</p>
+            <!-- هنا تظهر أزرار التحميل مباشرة بنفس الترتيب والصورة -->
+            <p class="success" style="font-size: 16px;">🎉 تم التحقق بنجاح! حمل المودات الآن:</p>
             
-            <a href="https://www.dropbox.com/scl/fi/j4v4ssvcfh18bfiftszof/Optima_2019_KHwylD.zip?rlkey=4xkvmcpac711khtenp60v4ysk&st=0nskr6jk&dl=1" target="_blank" class="link-card">🚘 اوبتما ٢٠١٩ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/j4v4ssvcfh18bfiftszof/Optima_2019_KHwylD.zip?rlkey=4xkvmcpac711khtenp60v4ysk&st=0nskr6jk&dl=1" target="_blank" class="link-card">⬇️ تحميل مود اوبتما ٢٠١٩ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/esm2hbzq6ip66obfevcog/Camry_2021_KHwylD.zip?rlkey=upbfz1cy0knmm7maax39joq8w&st=pd4w2rpa&dl=1" target="_blank" class="link-card">🚘 كامري ٢٠٢١ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/esm2hbzq6ip66obfevcog/Camry_2021_KHwylD.zip?rlkey=upbfz1cy0knmm7maax39joq8w&st=pd4w2rpa&dl=1" target="_blank" class="link-card">⬇️ تحميل مود كامري ٢٠٢١ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/m8mfrvjbdm87cisnp7vxi/Camry_2005_KHwylD.zip?rlkey=6k2xk7adc5oxd1381ysxe1rdy&st=xyxcius1&dl=1" target="_blank" class="link-card">🚘 كامري ٢٠٠٥ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/m8mfrvjbdm87cisnp7vxi/Camry_2005_KHwylD.zip?rlkey=6k2xk7adc5oxd1381ysxe1rdy&st=xyxcius1&dl=1" target="_blank" class="link-card">⬇️ تحميل مود كامري ٢٠٠٥ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/j6lnurcqyv0fj8vc81cnw/Cruze_2017_KHwylD.zip?rlkey=9uvvcst8pxqpzowmx9p93t76m&st=ah4d77gs&dl=1" target="_blank" class="link-card">🚗 كروز ٢٠١٧ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/j6lnurcqyv0fj8vc81cnw/Cruze_2017_KHwylD.zip?rlkey=9uvvcst8pxqpzowmx9p93t76m&st=ah4d77gs&dl=1" target="_blank" class="link-card">⬇️ تحميل مود كروز ٢٠١٧ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/km3j5tw8bnt99ebngvqum/Ddsn_2016_KHwylD.zip?rlkey=r4kg0mln6s8cwhj5vhun4mayx&st=nlloh4cl&dl=1" target="_blank" class="link-card">🛻 ددسن ٢٠١٦ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/km3j5tw8bnt99ebngvqum/Ddsn_2016_KHwylD.zip?rlkey=r4kg0mln6s8cwhj5vhun4mayx&st=nlloh4cl&dl=1" target="_blank" class="link-card">⬇️ تحميل مود ددسن ٢٠١٦ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/12jvs85pq3mx58mxhdwqr/Hilux_2011_KHwylD-2.zip?rlkey=n1oyx9498iry5sffe40lauj1l&st=qi1alrmb&dl=1" target="_blank" class="link-card">🛻 هايلكس ٢٠١١ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/12jvs85pq3mx58mxhdwqr/Hilux_2011_KHwylD-2.zip?rlkey=n1oyx9498iry5sffe40lauj1l&st=qi1alrmb&dl=1" target="_blank" class="link-card">⬇️ تحميل مود هايلكس ٢٠١١ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/v0adyryue04uzo06b980n/Caprice_2013_KHwylD.zip?rlkey=u5ugflyib2dl2f3pzswr1vp6g&st=g3rj4dvc&dl=1" target="_blank" class="link-card">🚘 كابرس ٢٠١٣ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/v0adyryue04uzo06b980n/Caprice_2013_KHwylD.zip?rlkey=u5ugflyib2dl2f3pzswr1vp6g&st=g3rj4dvc&dl=1" target="_blank" class="link-card">⬇️ تحميل مود كابرس ٢٠١٣ ( خويلد )</a>
             
-            <a href="https://www.dropbox.com/scl/fi/k5ufh18eaezsoxiqbqyx0/Hyundai_Sonata_2024_KHwylD.zip?rlkey=7toa2wa4kyjo86qonukbuffdt&st=2ha3kmbi&dl=1" target="_blank" class="link-card">🏎️ موستنق ٢٠١٣ ( خويلد )</a>
+            <a href="https://www.dropbox.com/scl/fi/k5ufh18eaezsoxiqbqyx0/Hyundai_Sonata_2024_KHwylD.zip?rlkey=7toa2wa4kyjo86qonukbuffdt&st=2ha3kmbi&dl=1" target="_blank" class="link-card">⬇️ تحميل مود موستنق ٢٠١٣ ( خويلد )</a>
             
             <a href="/logout" class="logout-btn">تسجيل الخروج الآمن 🔓</a>
         {% endif %}
     </div>
+
 </body>
 </html>
 """
