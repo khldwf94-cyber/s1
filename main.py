@@ -5,19 +5,19 @@ import threading
 from flask import Flask, request, session, render_template_string, redirect, url_for
 import telebot
 
-# 1. إعداد البوت والتوكن الخاص بك (تم استعادته بالكامل ليعمل بنجاح)
+# 1. إعداد البوت والتوكن الخاص بك
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXIsb1-k")
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# آيدي الحساب المسؤول الخاص بك
-ADMIN_ID = 5432340735 
+# آيدي الحساب المسؤول الخاص بك (تم تعديله إلى آيديك الحقيقي لتلقي التنبيهات)
+ADMIN_ID = 5091605335 
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # تأمين الجلسات بمفتاح تشفير قوي يمنع التلاعب بالـ Cookies
 
-# قائمة المشتركين المعتمدين رسمياً (آيديك مضاف تلقائياً مع صلاحية 30 يوم)
+# قائمة المشتركين المعتمدين رسمياً (تم تحديث الآيدي لآيديك الفعلي لتجربة الدخول مباشرة)
 APPROVED_USERS = {
-    5432340735: {
+    5091605335: {
         'expires_at': time.time() + 86400 * 30, 
         'current_ip': None
     }
@@ -104,14 +104,12 @@ HTML_PAGE = """
         {% endif %}
 
         {% if not step_two %}
-            <!-- الخطوة الأولى: إدخال الآيدي -->
             <form action="/login_step1" method="POST">
                 <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
-                <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
+                <input type="text" name="user_id" placeholder="مثال: 5091605335" required autocomplete="off">
                 <button type="submit">إرسال كود التحقق</button>
             </form>
         {% else %}
-            <!-- الخطوة الثانية: إدخال الرمز المرسل للبوت -->
             <form action="/login_step2" method="POST">
                 <p class="success">📩 أرسلنا كود التحقق إلى حسابك في تليجرام.</p>
                 <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
@@ -194,7 +192,6 @@ CONTENT_PAGE = """
         <p>جلسة دخولك نشطة الآن لمدة 90 دقيقة فقط على هذا الجهاز.</p>
         <hr style="border: 1px solid #333; margin: 20px 0;">
         
-        <!-- روابط قنوات المودات المخفية حقتك -->
         <a href="https://t.me/+tPBT1R66qx43NGQ0" target="_blank" class="link-card">🔗 رابط المجموعة الأساسية</a>
         <a href="https://t.me/+Ha82GPmaPJ05Yzg0" target="_blank" class="link-card">🔗 رابط مودات محاكي الحوادث</a>
         
