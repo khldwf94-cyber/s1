@@ -5,12 +5,11 @@ import threading
 from flask import Flask, request, session, render_template_string, redirect, url_for
 import telebot
 
-# 1. إعداد البوت والتوكن
-# ملاحظة: يفضل وضع توكن البوت في متغيرات بيئة Render باسم BOT_TOKEN أو وضعه مباشرة هنا مكان النص أدناه
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "744936d...") # استبدل بـ توكن بوتك الخاص
+# 1. إعداد البوت والتوكن الخاص بك (تم استعادته بالكامل ليعمل بنجاح)
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXIsb1-k")
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# آيدي الحساب المسؤول (أنت) لتلقي تنبيهات محاولات التسريب والدخول المتعدد
+# آيدي الحساب المسؤول الخاص بك
 ADMIN_ID = 5432340735 
 
 app = Flask(__name__)
