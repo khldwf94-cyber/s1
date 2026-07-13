@@ -5,28 +5,24 @@ import threading
 from flask import Flask, request, session, render_template_string, redirect, url_for
 import telebot
 
-# 1. إعداد البوت والتوكن الخاص بك
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXIsb1-k")
+# 1. إعداد البوت والتوكن الفعلي الخاص بك
+BOT_TOKEN = "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXILsb1-k"
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# آيدي الحساب المسؤول الخاص بك (حسابك الأساسي)
+# 👑 آيدي حسابك الأساسي (الأدمن) - يدخل دائماً ومستثنى من أي قيود
 ADMIN_ID = 5432340735 
+
+# 📢 آيدي قناتك الخاصة (تم استخراجه ليتوافق مع رابط قناتك الخاصة)
+BUYERS_CHAT_ID = -1002360216668  # الآيدي الرقمي التابع لرابط قناتك (+YjIKDxJjhsw1MDY8)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) 
 
-# قائمة المشتركين المعتمدين رسمياً (التحقق الفعلي من الشراء)
-APPROVED_USERS = {
-    5432340735: {
-        'expires_at': time.time() + 86400 * 30, 
-        'current_ip': None
-    }
-}
-
-# لتخزين أكواد الـ OTP المؤقتة لكل آيدي
+# لحفظ جلسات المشتركين النشطة مؤقتاً لتجنب تكرار تسجيل الدخول
+ACTIVE_SESSIONS = {}
 VERIFICATION_CODES = {}
 
-# 2. واجهة الدخول الموحدة (تحتوي على التحقق وإظهار المودات مباشرة في نفس الصفحة)
+# 2. واجهة الدخول الموحدة (المودات تظهر فوراً في نفس الصفحة بعد إدخال الكود)
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -82,7 +78,6 @@ HTML_PAGE = """
         .success { color: #00ff00; }
         p { font-size: 14px; line-height: 1.6; }
         
-        /* تصميم أزرار الروابط المباشرة */
         .links-section {
             margin-top: 20px;
             text-align: right;
@@ -134,16 +129,13 @@ HTML_PAGE = """
         {% endif %}
 
         {% if not logged_in %}
-            <!-- إذا كان المستخدم لم يسجل دخوله بعد -->
             {% if not step_two %}
-                <!-- الخطوة الأولى: إدخال الآيدي للتحقق من الشراء -->
                 <form action="/login_step1" method="POST">
                     <p>أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق (OTP)</p>
                     <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
                     <button type="submit">إرسال كود التحقق</button>
                 </form>
             {% else %}
-                <!-- الخطوة الثانية: إدخال الرمز المبعوث على التليجرام -->
                 <form action="/login_step2" method="POST">
                     <p class="success">📩 أرسلنا كود التحقق إلى حسابك في تليجرام.</p>
                     <input type="text" name="otp_code" placeholder="أدخل كود التحقق (OTP)" required autocomplete="off">
@@ -151,9 +143,7 @@ HTML_PAGE = """
                 </form>
             {% endif %}
         {% else %}
-            <!-- البوت تحقق منه ونجح الدخول: تظهر المودات مباشرة هنا وبنفس الصفحة! -->
             <p class="success" style="font-size: 18px; font-weight: bold;">🎉 تم التحقق بنجاح!</p>
-            <p>جلسة دخولك نشطة الآن على هذا الجهاز.</p>
             <div class="links-section">
                 <a href="https://t.me/+tPBT1R66qx43NGQ0" target="_blank" class="link-card">🔗 رابط المجموعة الأساسية</a>
                 <a href="https://t.me/+Ha82GPmaPJ05Yzg0" target="_blank" class="link-card">🔗 رابط مودات محاكي الحوادث</a>
@@ -165,31 +155,12 @@ HTML_PAGE = """
 </html>
 """
 
-# ==================== استقبال رسائل بوت الحماية ====================
-@protection_bot.message_handler(commands=['start'])
-def welcome_protection(message):
-    user_id = message.from_user.id
-    if user_id in APPROVED_USERS:
-        protection_bot.reply_to(message, 
-            f"🔒 أهلاً بك في بوت حماية متجر N7L.\n\n"
-            f"حسابك معتمد ومسجل لدينا.\n"
-            f"آيدي حسابك هو:\n`{user_id}`\n\n"
-            f"يمكنك الآن استخدامه للدخول للموقع الآمن."
-        )
-    else:
-        protection_bot.reply_to(message, 
-            f"❌ أهلاً بك في بوت حماية متجر N7L.\n\n"
-            f"حسابك غير مسجل في النظام حتى الآن.\n"
-            f"لشراء اشتراك، يرجى التواصل مع الإدارة."
-        )
-
 # ==================== مسارات Flask ====================
 @app.route('/')
 def index():
     user_id = session.get('user_id')
-    if user_id in APPROVED_USERS:
-        if time.time() < APPROVED_USERS[user_id]['expires_at']:
-            # إذا مسجل دخوله ومؤكد، تفتح الواجهة مضافاً إليها روابط المودات مباشرة
+    if user_id in ACTIVE_SESSIONS:
+        if time.time() < ACTIVE_SESSIONS[user_id]['expires_at']:
             return render_template_string(HTML_PAGE, error=None, step_two=False, logged_in=True)
             
     session.clear()
@@ -204,20 +175,30 @@ def login_step1():
         
     user_id = int(user_id_str)
     
-    # تحقق صارم: هل المشترك مسجل ومشتري فعلاً؟
-    if user_id not in APPROVED_USERS:
-        return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في النظام (غير مشتري). تواصل مع الإدارة لتفعيل حسابك.", step_two=False, logged_in=False)
-        
-    # توليد الكود العشوائي
-    otp = str(random.randint(100000, 999999))
+    # 🛡️ التحقق التلقائي: هل العميل مشترك في القناة؟
+    is_buyer = False
     
+    if user_id == ADMIN_ID:
+        is_buyer = True
+    else:
+        try:
+            member = protection_bot.get_chat_member(chat_id=BUYERS_CHAT_ID, user_id=user_id)
+            if member.status in ['member', 'administrator', 'creator']:
+                is_buyer = True
+        except Exception as e:
+            print(f"Verification Error: {e}")
+            is_buyer = False
+
+    if not is_buyer:
+        return render_template_string(HTML_PAGE, error="❌ هذا الآيدي غير مسجل في النظام كـ (مشتري في القناة).", step_two=False, logged_in=False)
+        
+    otp = str(random.randint(100000, 999999))
     VERIFICATION_CODES[user_id] = {
         'code': otp,
         'generated_at': time.time()
     }
     
     try:
-        # إرسال الكود للبوت
         protection_bot.send_message(
             user_id, 
             f"🔒 كود التحقق لدخول موقع s1 هو:\n\n"
@@ -229,7 +210,7 @@ def login_step1():
     except Exception:
         return render_template_string(
             HTML_PAGE, 
-            error="❌ فشل إرسال الكود. تأكد من ضغط /start في البوت أولاً ليتسنى له مراسلتك.", 
+            error="❌ فشل إرسال الكود. تأكد من ضغط /start في البوت أولاً لكي يستطيع مراسلتك.", 
             step_two=False,
             logged_in=False
         )
@@ -250,11 +231,12 @@ def login_step2():
         
     if otp_input == code_data['code']:
         client_ip = request.remote_addr
-        APPROVED_USERS[user_id]['expires_at'] = time.time() + 5400
-        APPROVED_USERS[user_id]['current_ip'] = client_ip
+        ACTIVE_SESSIONS[user_id] = {
+            'expires_at': time.time() + 5400,
+            'current_ip': client_ip
+        }
         session['user_id'] = user_id
         VERIFICATION_CODES.pop(user_id, None)
-        # عند إدخال الكود الصحيح، يتم تجديد الصفحة وتظهر المودات فوراً بنفس الصفحة!
         return render_template_string(HTML_PAGE, error=None, step_two=False, logged_in=True)
     else:
         return render_template_string(HTML_PAGE, error="❌ كود التحقق غير صحيح. أعد المحاولة.", step_two=True, logged_in=False)
@@ -262,8 +244,8 @@ def login_step2():
 @app.route('/logout')
 def logout():
     user_id = session.get('user_id')
-    if user_id in APPROVED_USERS:
-        APPROVED_USERS[user_id]['current_ip'] = None
+    if user_id in ACTIVE_SESSIONS:
+        ACTIVE_SESSIONS.pop(user_id, None)
     session.clear()
     return redirect(url_for('index'))
 
