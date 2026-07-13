@@ -9,13 +9,13 @@ import telebot
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8346972966:AAGJpcm8XOroKT4VE-o38Ky4JEHXIsb1-k")
 protection_bot = telebot.TeleBot(BOT_TOKEN)
 
-# آيدي الحساب المسؤول الخاص بك (تم تثبيته على آيديك المطلوب لتلقي التنبيهات)
+# آيدي الحساب المسؤول الخاص بك
 ADMIN_ID = 5432340735 
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # تأمين الجلسات بمفتاح تشفير قوي يمنع التلاعب بالـ Cookies
 
-# قائمة المشتركين المعتمدين رسمياً (تم تسجيل آيديك المطلوب كمعتمد أساسي)
+# قائمة المشتركين المعتمدين رسمياً
 APPROVED_USERS = {
     5432340735: {
         'expires_at': time.time() + 86400 * 30, 
@@ -226,8 +226,8 @@ def welcome_protection(message):
 def index():
     user_id = session.get('user_id')
     if user_id in APPROVED_USERS:
-        # التحقق من صلاحية وقت الجلسة والآيبي لمنع مشاركة الرابط
-        if time.time() < APPROVED_USERS[user_id]['expires_at'] and APPROVED_USERS[user_id]['current_ip'] == request.remote_addr:
+        # التحقق من صلاحية وقت الجلسة
+        if time.time() < APPROVED_USERS[user_id]['expires_at']:
             return render_template_string(CONTENT_PAGE)
             
     # تنظيف الجلسات القديمة أو منتهية الصلاحية
@@ -289,28 +289,7 @@ def login_step2():
     if otp_input == code_data['code']:
         client_ip = request.remote_addr
         
-        # حماية ضد مشاركة الحساب وتغيير الأجهزة في نفس الوقت
-        if APPROVED_USERS[user_id]['current_ip'] and APPROVED_USERS[user_id]['current_ip'] != client_ip:
-            try:
-                # إرسال بلاغ فوري للأدمن بوجود تسريب
-                protection_bot.send_message(
-                    ADMIN_ID, 
-                    f"🚨 *محاولة تسريب أو دخول متعدد!*\n\n"
-                    f"العميل: `{user_id}` حاول فتح الحساب من جهاز آخر.\n"
-                    f"تم حظره وتصفير جلسته حمايةً لروابطك."
-                )
-            except Exception:
-                pass
-            
-            APPROVED_USERS[user_id]['current_ip'] = None # إعادة تعيين الآي بي لإجبارهم على تسجيل جديد
-            session.clear()
-            return render_template_string(
-                HTML_PAGE, 
-                error="❌ تم رصد دخول من جهاز آخر. تم قفل حسابك لأسباب أمنية، تواصل مع الدعم.", 
-                step_two=False
-            )
-            
-        # تحديث صلاحية الجلسة إلى 90 دقيقة (5400 ثانية) وتثبيت آي بي العميل الحلي
+        # حماية مبسطة للمزامنة بين الأجهزة
         APPROVED_USERS[user_id]['expires_at'] = time.time() + 5400
         APPROVED_USERS[user_id]['current_ip'] = client_ip
         session['user_id'] = user_id
