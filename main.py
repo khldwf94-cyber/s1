@@ -22,7 +22,7 @@ app.secret_key = os.urandom(24)
 ACTIVE_SESSIONS = {}
 VERIFICATION_CODES = {}
 
-# 2. واجهة التحكم المصممة كصفحة نصوص منسقة مع روابط مخفية داخل الكلمات
+# 2. واجهة التحكم المصممة كصفحة نصوص منسقة مع روابط مخفية داخل الكلمات بالكامل
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -183,14 +183,12 @@ HTML_PAGE = """
         {% if not logged_in %}
             <div class="login-form">
                 {% if not step_two %}
-                    <!-- خطوة 1 -->
                     <form action="/login_step1" method="POST">
                         <p style="font-size: 14px; color: #8b949e;">أدخل آيدي التليجرام الخاص بك لتلقي رمز التحقق الثنائي (OTP)</p>
                         <input type="text" name="user_id" placeholder="مثال: 5432340735" required autocomplete="off">
                         <button type="submit">إرسال كود التحقق</button>
                     </form>
                 {% else %}
-                    <!-- خطوة 2 -->
                     <form action="/login_step2" method="POST">
                         <p class="success">📩 تم إرسال الرمز إلى حسابك بتليجرام.</p>
                         <input type="text" name="otp_code" placeholder="أدخل كود التحقق المستلم" required autocomplete="off">
@@ -199,7 +197,6 @@ HTML_PAGE = """
                 {% endif %}
             </div>
         {% else %}
-            <!-- الصندوق النصي للمشتركين بعد الدخول -->
             <div class="paste-box">
 <span class="warning-text">‼️ ماراح مسامح اي شخص يسرب التجميعه او ياخذ المودات منها او ياخذ التجميعه بدون مايشتريها ‼️</span>
 
@@ -215,7 +212,7 @@ Tik : <a href="https://www.tiktok.com/@b6a1_" target="_blank">@b6a1_</a>
 
 <a href="https://www.mediafire.com/file_premium/0x03rnq40jntw4/vehicles.zip/file" target="_blank">الملف الشامل للمركبات (vehicles.zip)</a>
 
-<span class="section-header">_المواتر_ 👇🏻</span>
+<span class="section-header">مواتر</span>
 ( <a href="https://www.dropbox.com/scl/fi/j4v4ssvcfh18bfiftszof/Optima_2019_KHwylD.zip?rlkey=4xkvmcpac711khtenp60v4ysk&st=0nskr6jk&dl=1" target="_blank">اوبتما ٢٠١٩ ( خويلد )</a> )
 
 ( <a href="https://www.dropbox.com/scl/fi/esm2hbzq6ip66obfevcog/Camry_2021_KHwylD.zip?rlkey=upbfz1cy0knmm7maax39joq8w&st=pd4w2rpa&dl=1" target="_blank">كامري ٢٠٢١ ( خويلد )</a> )
@@ -370,6 +367,8 @@ Tik : <a href="https://www.tiktok.com/@b6a1_" target="_blank">@b6a1_</a>
 
 ( <a href="https://www.dropbox.com/scl/fi/l2pz77ku2jhj00btvdmiz/CeratoFIR.zip?rlkey=2uizzxgbue48nmbnb57khsebs&st=dt3xdgyo&dl=1" target="_blank">سيراتو</a> )
 
+( <a href="https://www.dropbox.com/scl/fi/6eczql7zcqd7meq5xhcs0/alkhor_server_toyota_land_cruiser_200.zip?rlkey=nuhmjfy76mhbxtn5u39686b4h&st=qr6k8qgk&dl=1" target="_blank">لاندكروزر ٢٠٠</a> )
+
 ( <a href="https://www.dropbox.com/scl/fi/66lg82v23p0x5cdqsg262/77sonata.zip?rlkey=s9w3v7fuixv3kmo9bwwtunwmv&st=j2xbeifj&dl=1" target="_blank">سوناتا ٧٧</a> )
 
 ( <a href="https://www.dropbox.com/scl/fi/vz8iu1az9a9nkspoj7bmu/Azera-2015.zip?rlkey=ivpscc6pik3w6g8sy2hdtv3ix&st=gswyu2n9&dl=1" target="_blank">ازيرا ٢٠١٥</a> )
@@ -480,7 +479,7 @@ Tik : <a href="https://www.tiktok.com/@b6a1_" target="_blank">@b6a1_</a>
 
 ( <a href="https://www.mediafire.com/file/kquad01caleylra/2025_2.zip/file" target="_blank">موستنق ٢٠٢٥</a> )
 
-<span class="section-header">_المابات_ 👇🏻</span>
+<span class="section-header">مابات</span>
 ( <a href="https://www.dropbox.com/scl/fi/gshi21vvm75tlrmhm5sd6/Dayiri-Al-Tishalih-Al-Qassim.zip?rlkey=uadv0ju0oo0aci6o3t6ybfhiq&st=pfdsz9ll&dl=1" target="_blank">ماب الدايري تشاليح القصيم (خويلد)</a> )
 
 ( <a href="https://www.dropbox.com/scl/fi/qt3wnl3m7iapu0e1nnpem/Mustawdaeat_KHwylD.zip?rlkey=29j4jfvex52fcelpjvlq0l7oi&st=g3c1byi2&dl=1" target="_blank">ماب مستودعات (خويلد)</a> )
@@ -563,7 +562,7 @@ Tik : <a href="https://www.tiktok.com/@b6a1_" target="_blank">@b6a1_</a>
 
 ( <a href="https://gofile.io/d/HEECgj" target="_blank">ماب جزيرة كاسل روك</a> )
 
-<span class="section-header">_المودات_ 👇🏻</span>
+<span class="section-header">مودات</span>
 ( <a href="https://www.dropbox.com/scl/fi/ud743al0fshny1plsyfcs/cktodbox.zip?rlkey=m6y1pch00o7dhshs4mryjs9cl&st=dgqswq4y&dl=1" target="_blank">مود الغيوم الواقعي</a> )
 
 ( <a href="https://www.mediafire.com/file/rohkc6xy14wqfb1/cktodbox_eveningmorning.zip/file" target="_blank">مود الغيوم المسائي والصباحي</a> )
@@ -608,7 +607,7 @@ Tik : <a href="https://www.tiktok.com/@b6a1_" target="_blank">@b6a1_</a>
 
 ( <a href="https://www.mediafire.com/file/i84fw02rrrv6kvj/agent_traffic_mod.zip/file" target="_blank">مود المواطنين والسيارات الواقعية في الشارع Traffic</a> )
 
-<span class="section-header">_البكجات_ 👇🏻</span>
+<span class="section-header">بكجات</span>
 ( <a href="https://mega.nz/file/6pwSRY6L#QAf8kgvl1FrFLQPtp5xnlKey39Jy78cPj1DG669MQ70" target="_blank">بكج مواتر الميجا الأول</a> )
 
 ( <a href="https://mega.nz/file/G0AR0LoL#mn_lqPlCV9B78qljiw4_F20Nt1TiFOazupSo81Nequs" target="_blank">بكج مواتر الميجا الثاني</a> )
